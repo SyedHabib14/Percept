@@ -53,7 +53,7 @@ def _download_with_progress(url: str, destination: Path) -> None:
 
 def _download_from_hf(repo_id: str, filename: str, destination: Path) -> Path:
     try:
-        from huggingface_hub import EntryNotFoundError, hf_hub_download
+        from huggingface_hub import hf_hub_download
     except ImportError as exc:
         raise ModelNotFoundError(
             "huggingface_hub is not installed but `hf_repo_id` was set. "
@@ -81,8 +81,14 @@ def _download_from_hf(repo_id: str, filename: str, destination: Path) -> Path:
                 token=os.environ.get("HF_TOKEN") or None,
             )
             logger.info("Fetched ONNX external data %s", sidecar)
-        except EntryNotFoundError:
-            pass
+        except Exception as exc:
+            # huggingface_hub has moved its not-found exception between
+            # versions. Treat only an HTTP 404 as an optional sidecar miss;
+            # preserve authentication, network, and other real failures.
+            response = getattr(exc, "response", None)
+            status_code = getattr(response, "status_code", None)
+            if status_code != 404 and "404" not in str(exc):
+                raise
     return cached_path
 
 
