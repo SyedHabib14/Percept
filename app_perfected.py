@@ -4,9 +4,15 @@ import base64, html, logging, os, sys, tempfile, time
 from pathlib import Path
 import streamlit as st
 
+try:
+    _deployment_secrets = dict(st.secrets)
+except Exception:
+    # Local runs may intentionally have no .streamlit/secrets.toml. In that
+    # case, preserve any normal environment variables instead.
+    _deployment_secrets = {}
 for _secret_name in ("MODEL_REPO", "HF_TOKEN", "PDC_DEVICE"):
-    if _secret_name in st.secrets:
-        os.environ[_secret_name] = str(st.secrets[_secret_name])
+    if _secret_name in _deployment_secrets:
+        os.environ[_secret_name] = str(_deployment_secrets[_secret_name])
 
 import cv2, numpy as np
 from PIL import Image, ImageDraw, ImageOps, ImageFilter
