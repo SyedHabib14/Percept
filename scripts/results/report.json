@@ -1,0 +1,57 @@
+[
+  {
+    "source": "D:\\PDCv5\\examples\\images\\body_only_2.jpg",
+    "output": "results\\body_only_2_annotated.jpg",
+    "person_count": 1,
+    "face_count": 0,
+    "people": [
+      {
+        "person_id": "person_001",
+        "person_index": 0,
+        "person": {
+          "box": [
+            160,
+            0,
+            498,
+            834
+          ],
+          "confidence": 0.38671875,
+          "class_name": "person"
+        },
+        "face": null,
+        "analysis": {
+          "estimated_age": 34.22349548339844,
+          "gender_probability": 0.7081258893013,
+          "category_index": 0,
+          "face_available": false
+        },
+        "visibility_class": "BO",
+        "body_visibility": "body_only",
+        "visibility_scores": {
+          "face": 0.0,
+          "upper": 0.333,
+          "lower": 0.307,
+          "aspect_full": 0.39
+        },
+        "visibility_evidence": {
+          "face": {
+            "visible": 0,
+            "total": 5,
+            "boundary_penalty": 0.0
+          },
+          "upper": {
+            "visible": 8,
+            "total": 8,
+            "boundary_penalty": 0.0
+          },
+          "lower": {
+            "visible": 4,
+            "total": 4,
+            "boundary_penalty": 0.0
+          }
+        },
+        "camera_orientation": "insufficient_evidence"
+      }
+    ]
+  }
+]

@@ -1,0 +1,54 @@
+# PDC — Default Configuration
+# Every value here can be overridden by a custom YAML file (--config path)
+# or by PDC_* environment variables. See src/pdc/config.py for the full list.
+
+model:
+  detection_weights: "../models/detection_engine.pt"
+  analysis_weights: "../models/analysis_engine.onnx"
+  pose_weights: "../models/dpose_engine.onnx"
+
+  # Optional — used only if the local weight file above is missing.
+  # Point either at a direct download URL, or set hf_repo_id to pull
+  # both files from a Hugging Face Hub model repo.
+  detection_weights_url: null
+  analysis_weights_url: null
+  pose_weights_url: null
+  hf_repo_id: null
+
+  detection_confidence: 0.25
+  detection_iou: 0.45
+  analysis_input_size: 384
+  pose_keypoint_visibility: 0.5
+  body_face_min_visible: 2
+  body_upper_min_visible: 3
+  body_lower_min_visible: 2
+  min_image_dimension: 320
+
+  device: "cuda"          # "cuda" by default; pass --device cpu to force CPU
+  person_class_name: "person"
+  face_class_name: "face"
+
+visualization:
+  person_line_width: 2
+  face_line_width: 2
+  badge_alpha: 225
+  badge_margin: 6
+  gender_labels:
+    0: "M"
+    1: "F"
+  age_bins:
+    Child: 11
+    Teen: 20
+    Adult: 50
+    Elder: null
+  age_display_mode: "binned" # "exact" or "binned"
+  age_smoothing: "none" # live webcam only: "none" or "rolling_average"
+  age_smoothing_window: 5
+
+webcam:
+  source: "0"              # camera index, video file path, or RTSP URL
+  process_every_n_frames: 1
+  mirror: true
+  show_fps: true
+  window_title: "PDC — Live Analysis"
+  record_output: null       # e.g. "session.mp4" to save the annotated stream

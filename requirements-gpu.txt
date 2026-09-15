@@ -1,0 +1,7 @@
+# Optional: install AFTER requirements.txt for NVIDIA GPU acceleration.
+# Uninstall the CPU-only `onnxruntime` first to avoid provider conflicts.
+#
+#   pip uninstall -y onnxruntime
+#   pip install -r requirements-gpu.txt
+#   # set device: "cuda" (or "auto") in config/default.yaml
+onnxruntime-gpu>=1.23.0,<1.24.0

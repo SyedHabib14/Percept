@@ -1,0 +1,81 @@
+[
+  {
+    "source": "examples\\images\\default.jpg",
+    "output": "results\\default_annotated.jpg",
+    "person_count": 1,
+    "face_count": 0,
+    "people": [
+      {
+        "person_index": 0,
+        "person": {
+          "box": [
+            744,
+            1505,
+            2242,
+            4605
+          ],
+          "confidence": 0.9347896575927734,
+          "class_name": "person"
+        },
+        "face": null,
+        "analysis": {
+          "estimated_age": 19.45090103149414,
+          "gender_probability": 0.9960389137268066,
+          "category_index": 0,
+          "face_available": false
+        }
+      }
+    ],
+    "timing_ms": {
+      "load": 86.41,
+      "detect": 3182.15,
+      "analyze": 597.84,
+      "render": 47.25,
+      "total": 3913.65
+    }
+  },
+  {
+    "source": "examples\\images\\input.jpg",
+    "output": "results\\input_annotated.jpg",
+    "person_count": 1,
+    "face_count": 1,
+    "people": [
+      {
+        "person_index": 0,
+        "person": {
+          "box": [
+            93,
+            46,
+            263,
+            519
+          ],
+          "confidence": 0.9234526753425598,
+          "class_name": "person"
+        },
+        "face": {
+          "box": [
+            160,
+            72,
+            202,
+            121
+          ],
+          "confidence": 0.7513657212257385,
+          "class_name": "face"
+        },
+        "analysis": {
+          "estimated_age": 26.980854034423828,
+          "gender_probability": 0.9969723224639893,
+          "category_index": 1,
+          "face_available": true
+        }
+      }
+    ],
+    "timing_ms": {
+      "load": 1.56,
+      "detect": 794.83,
+      "analyze": 632.14,
+      "render": 4.63,
+      "total": 1433.16
+    }
+  }
+]

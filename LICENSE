@@ -1,0 +1,23 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026. All rights reserved.
+
+This repository, including its source code, configuration, packaged
+pipeline, and any accompanying trained model weights (collectively,
+the "Software"), is proprietary and confidential.
+
+No part of the Software may be copied, modified, merged, published,
+distributed, sublicensed, and/or sold without prior written
+permission from the copyright holder.
+
+The Software is provided "AS IS", without warranty of any kind,
+express or implied, including but not limited to the warranties of
+merchantability, fitness for a particular purpose, and
+non-infringement.
+
+---
+
+Note to maintainers: replace this file with your organization's actual
+license (MIT, Apache-2.0, a commercial EULA, etc.) before distributing
+this repository externally. This placeholder mirrors the confidentiality
+notice from the original research notebook.

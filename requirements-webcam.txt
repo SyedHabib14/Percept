@@ -1,0 +1,11 @@
+# Install this AFTER requirements.txt when you want the live webcam
+# preview window (`scripts/infer_webcam.py` with a display attached).
+#
+# `opencv-python-headless` (used by requirements.txt so the package
+# installs cleanly on headless servers/containers/CI) does not ship
+# the GUI backend that `cv2.imshow` needs. Installing the regular
+# `opencv-python` package here overrides it with a GUI-capable build.
+#
+#   pip install -r requirements.txt
+#   pip install -r requirements-webcam.txt
+opencv-python>=4.9.0,<5.0.0

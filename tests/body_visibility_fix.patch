@@ -1,0 +1,173 @@
+--- /mnt/project/age_smoother.py	1979-12-31 00:00:00.000000000 +0000
++++ pdc/age_smoother.py	2026-09-12 13:36:03.342061842 +0000
+@@ -33,3 +33,8 @@
+         return track.track_id, (sum(track.ages) / len(track.ages) if track.ages else raw_age)
+     def expire(self, now: float) -> None:
+         self._tracks = {i:t for i,t in self._tracks.items() if now - t.last_seen <= self.max_age_seconds}
++    def active_track_ids(self) -> set[int]:
++        """Track ids currently live (not yet expired). Lets other per-frame,
++        per-track state (e.g. classification-stability history) get pruned in
++        step with this tracker instead of growing unboundedly."""
++        return set(self._tracks.keys())
+--- /mnt/project/metadata.py	1979-12-31 00:00:00.000000000 +0000
++++ pdc/metadata.py	2026-09-12 13:38:29.532130219 +0000
+@@ -62,8 +62,12 @@
+                              config: BodyVisibilityConfig = BodyVisibilityConfig()) -> dict:
+     """Classify a pose without changing the pose model.
+ 
+-    Scores are intentionally conservative: full requires strong independent upper
+-    and lower evidence, while face-only requires no body evidence.
++    Scores are intentionally conservative: `upper_score`/`lower_score` are the bar
++    for a region to count as visible at all, while the stricter `full_score` bar is
++    used only to flag a "full" call as high- vs. moderate-confidence via `ambiguous`
++    -- it must never cause "full" evidence to be relabeled as a different class
++    (e.g. "body_only"), since that would throw away real detections rather than
++    just annotate their confidence.
+     """
+     points = list(keypoints)
+     names = np.asarray([p.name for p in points], dtype=object)
+@@ -80,20 +84,19 @@
+     lower = scores["lower"] >= config.lower_score and evidence["lower"]["visible"] >= 2
+     if small:
+         upper = lower = False
+-    if upper and lower and scores["upper"] >= config.full_score and scores["lower"] >= config.full_score:
++    if upper and lower:
+         body_visibility = "full"
+     elif upper and not lower:
+         body_visibility = "upper_only"
+     elif lower and not upper:
+         body_visibility = "lower_only"
+-    elif face and not upper and not lower:
++    elif face:
+         body_visibility = "face_only"
+-    elif upper or lower:
+-        body_visibility = "body_only"
+     else:
+-        body_visibility = "face_only" if face else "body_only"
++        body_visibility = "body_only"
++    high_confidence_full = upper and lower and scores["upper"] >= config.full_score and scores["lower"] >= config.full_score
+     return {"body_visibility": body_visibility, "scores": scores, "evidence": evidence,
+-            "ambiguous": bool((upper and lower) and body_visibility != "full")}
++            "ambiguous": bool(body_visibility == "full" and not high_confidence_full)}
+ 
+ 
+ def image_metadata(image: np.ndarray, min_dimension: int = 320, blur_threshold: float = 100.0) -> dict:
+--- /mnt/project/pipeline.py	1979-12-31 00:00:00.000000000 +0000
++++ pdc/pipeline.py	2026-09-12 13:38:29.530768686 +0000
+@@ -108,11 +108,8 @@
+ 
+         t2 = time.perf_counter()
+         analysis_results = self._analyze_people(image, persons, faces, poses, live=live)
+-        if self.config.visualization.age_smoothing == "rolling_average":
+-            if live:
+-                self._smooth_ages(analysis_results)
+-            else:
+-                logger.warning("age_smoothing is live-only and is ignored for image/batch/API processing.")
++        if self.config.visualization.age_smoothing == "rolling_average" and not live:
++            logger.warning("age_smoothing is live-only and is ignored for image/batch/API processing.")
+ 
+         t3 = time.perf_counter()
+         annotated = render_annotations(image, analysis_results, self.config.visualization)
+@@ -153,6 +150,7 @@
+ 
+     def _analyze_people(self, image: np.ndarray, persons, faces, poses: List[PoseResult], *, live: bool = False) -> List[PersonAnalysis]:
+         results: List[PersonAnalysis] = []
++        now = time.monotonic() if live else None
+ 
+         for person_index, person in enumerate(persons):
+             px1, py1, px2, py2 = person.box
+@@ -170,6 +168,20 @@
+ 
+             attributes = self.analyzer.analyze(face_crop=face_crop, person_crop=person_crop)
+ 
++            # A per-person identity that survives across frames is needed for any
++            # live-only temporal smoothing (age rolling-average and the visibility
++            # stability vote below). `self.age_smoother` is an IoU tracker plus an
++            # age-averaging layer on top; here it is always run in live mode to get
++            # the IoU-matched track_id, regardless of whether the age_smoothing
++            # *feature* is enabled -- the two are independent uses of one tracker.
++            track_id, smoothed_age = None, attributes.estimated_age
++            if live:
++                face_valid = best_face is not None and attributes.face_available
++                track_id, tracked_age = self.age_smoother.update(
++                    person.box, attributes.estimated_age, attributes.face_available, face_valid, now)
++                if self.config.visualization.age_smoothing == "rolling_average":
++                    smoothed_age = tracked_age
++
+             pose = next((item for item in poses if item.class_name == "person" and item.box == person.box), None)
+             metadata = None
+             if pose is not None:
+@@ -177,8 +189,12 @@
+                     pose.keypoints, person.box, image.shape[:2], pose.confidence,
+                     BodyVisibilityConfig(keypoint_visibility=self.config.model.pose_keypoint_visibility))
+                 if live:
+-                    key = tuple(person.box)
+-                    history = self._visibility_history.setdefault(key, [])
++                    # Keyed by the IoU-matched track_id (stable across frames for the
++                    # same person), NOT the raw pixel box: the box moves/jitters every
++                    # frame even for a stationary subject, so keying on it directly
++                    # would silently create a fresh, single-entry history each frame
++                    # and this majority-vote smoothing would never engage.
++                    history = self._visibility_history.setdefault(track_id, [])
+                     history.append(visibility["body_visibility"])
+                     del history[:-3]
+                     if len(history) >= 2:
+@@ -198,17 +214,19 @@
+                     analysis=attributes,
+                     pose=pose,
+                     metadata=metadata,
++                    track_id=track_id,
+                     raw_age=attributes.estimated_age,
+-                    smoothed_age=attributes.estimated_age,
++                    smoothed_age=smoothed_age,
+                 )
+             )
+ 
+-        return results
++        if live:
++            # Prune history for tracks the IoU tracker has since expired, so this
++            # dict doesn't grow without bound over a long-running webcam session.
++            active_ids = self.age_smoother.active_track_ids()
++            self._visibility_history = {
++                track_id: history for track_id, history in self._visibility_history.items()
++                if track_id in active_ids
++            }
+ 
+-    def _smooth_ages(self, results: List[PersonAnalysis]) -> None:
+-        now = time.monotonic()
+-        for result in results:
+-            face_valid = result.face is not None and result.analysis is not None and result.analysis.face_available
+-            track_id, age = self.age_smoother.update(result.person.box, result.raw_age,
+-                result.analysis.face_available if result.analysis else False, face_valid, now)
+-            result.track_id, result.smoothed_age = track_id, age
++        return results
+--- /mnt/project/test_metadata.py	1979-12-31 00:00:00.000000000 +0000
++++ tests/test_metadata.py	2026-09-12 13:38:36.079337709 +0000
+@@ -27,6 +27,27 @@
+     return [PoseKeypoint(name, *values[name], visibility if name in visible else 0.0) for name in KEYPOINT_NAMES]
+ 
+ 
++def test_full_body_moderate_confidence_is_not_collapsed_to_body_only():
++    """Regression test: upper AND lower both individually detected with real,
++    believable confidence (0.6 -- clears the 0.56 per-region bar but not the
++    stricter 0.68 full_score bar) must still be classified 'full', just flagged
++    'ambiguous' for lower confidence. It must never be relabeled 'body_only',
++    which is a different class (torso only, no limbs) and throws the detected
++    limb evidence away entirely."""
++    upper = {"left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
++             "left_wrist", "right_wrist", "left_hip", "right_hip"}
++    lower = {"left_knee", "right_knee", "left_ankle", "right_ankle"}
++    box, shape = (0, 0, 400, 800), (800, 600)
++
++    moderate = classify_body_visibility(make_pose(upper | lower, visibility=0.6), box, shape)
++    assert moderate["body_visibility"] == "full"
++    assert moderate["ambiguous"] is True
++
++    high = classify_body_visibility(make_pose(upper | lower, visibility=1.0), box, shape)
++    assert high["body_visibility"] == "full"
++    assert high["ambiguous"] is False
++
++
+ def test_classifier_all_classes_and_low_confidence_failure():
+     face = {"nose", "left_eye", "right_eye"}
+     upper = {"left_shoulder", "right_shoulder", "left_elbow", "right_elbow"}

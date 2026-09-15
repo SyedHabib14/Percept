@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdc"
+version = "1.0.0"
+description = "Person Detector & Classifier — two-stage detection + attribute analysis pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

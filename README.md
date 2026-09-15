@@ -301,6 +301,39 @@ pdc-person-detector-classifier/
 
 ## ☁️ Deploying Online
 
+### PERCEPT Streamlit console on Hugging Face Spaces
+
+The repository also includes a Streamlit operator console at [`app.py`](app.py).
+It is an interactive surface over the same `PDCPipeline` used by the CLI and API:
+its person cards and image boxes are synchronized in both directions. Select a
+card to focus its box, or click a detected box to select and expand that card.
+
+For a Streamlit Space, set the Space SDK to **Streamlit**, use `app.py` as the
+entry point, and install `requirements.txt`. Store the following as Space
+Secrets — never commit either value:
+
+| Secret | Required | Purpose |
+|---|---:|---|
+| `MODEL_REPO` | Yes, if weights are not bundled | Private Hugging Face model repo, such as `org/percept-weights` |
+| `HF_TOKEN` | Yes, for a private model repo | Read token permitted to access `MODEL_REPO` |
+| `PDC_DEVICE` | No | `auto` (default), `cpu`, or `cuda` when the Space has GPU support |
+
+`MODEL_REPO` is also accepted as `PDC_HF_REPO_ID` for existing deployments.
+Weights are retrieved through `huggingface_hub`, cached locally, and the
+Streamlit resource cache keeps model instances alive across normal reruns.
+
+Run locally with:
+
+```bash
+py -3.12 -m streamlit run app.py
+```
+
+Image, camera-frame, and sampled-video workflows are available. Video analysis
+processes every configured sampled frame and shows the final sampled result;
+long clips therefore remain compute-bound by the real CV pipeline.
+
+---
+
 The `api/` folder is a self-contained FastAPI service — build it once with the
 included `Dockerfile` and run it anywhere that runs containers. A few good,
 low-effort options depending on your budget and traffic:
