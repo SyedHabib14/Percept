@@ -53,7 +53,7 @@ def _download_with_progress(url: str, destination: Path) -> None:
 
 def _download_from_hf(repo_id: str, filename: str, destination: Path) -> Path:
     try:
-        from huggingface_hub import hf_hub_download
+        from huggingface_hub import EntryNotFoundError, hf_hub_download
     except ImportError as exc:
         raise ModelNotFoundError(
             "huggingface_hub is not installed but `hf_repo_id` was set. "
@@ -71,6 +71,18 @@ def _download_from_hf(repo_id: str, filename: str, destination: Path) -> Path:
             token=os.environ.get("HF_TOKEN") or None,
         )
     )
+    if filename.endswith(".onnx"):
+        sidecar = f"{filename}.data"
+        try:
+            hf_hub_download(
+                repo_id=repo_id,
+                filename=sidecar,
+                local_dir=destination.parent,
+                token=os.environ.get("HF_TOKEN") or None,
+            )
+            logger.info("Fetched ONNX external data %s", sidecar)
+        except EntryNotFoundError:
+            pass
     return cached_path
 
 
