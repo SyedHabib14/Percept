@@ -1,12 +1,20 @@
 """PERCEPT — privacy-safe visual analysis workspace."""
 from __future__ import annotations
-import base64, html, sys, tempfile, time
+import base64, html, logging, os, sys, tempfile, time
 from pathlib import Path
-import cv2, numpy as np, streamlit as st
+import streamlit as st
+
+for _secret_name in ("MODEL_REPO", "HF_TOKEN", "PDC_DEVICE"):
+    if _secret_name in st.secrets:
+        os.environ[_secret_name] = str(st.secrets[_secret_name])
+
+import cv2, numpy as np
 from PIL import Image, ImageDraw, ImageOps, ImageFilter
 ROOT=Path(__file__).resolve().parent; sys.path.insert(0,str(ROOT/'src'))
 from pdc import PDCConfig, PDCPipeline
 from pdc.ui_state import person_at_point, person_id_for_index, selection_is_valid
+
+logger = logging.getLogger("percept.streamlit")
 
 st.set_page_config(page_title='PERCEPT · Visual analysis', page_icon='◈', layout='wide', initial_sidebar_state='expanded')
 
@@ -246,7 +254,9 @@ def main():
                     if frame_number%frame_sampling==0: processed=pipeline.process_image(candidate); processed.analysis_results=processed.analysis_results[:max_people]; latest=candidate
                     frame_number+=1; progress.progress(min(frame_number/total_frames,1.0),text='Reviewing video…')
                 progress.empty()
-            except Exception: st.error('We couldn’t complete this analysis. Please try again with another source.'); return
+            except Exception:
+                logger.exception("Video inference failed")
+                st.error('We couldn’t complete this analysis. Please try again with another source.'); return
             finally: capture.release()
         if processed is None or latest is None: st.warning('No readable moments were found in this video.'); return
         frame,image,elapsed=processed,latest,processed.timing_ms.get('total',0)
@@ -255,7 +265,9 @@ def main():
         if image is None: st.error('This file could not be read. Please choose a JPEG, PNG, or WebP image.'); return
         try:
             pipeline=load_pipeline(confidence,pose_confidence,max_people); started=time.perf_counter(); frame=pipeline.process_image(image); frame.analysis_results=frame.analysis_results[:max_people]; elapsed=(time.perf_counter()-started)*1000
-        except Exception: st.error('We couldn’t complete this analysis. Please try again with another source.'); return
+        except Exception:
+            logger.exception("Image inference failed")
+            st.error('We couldn’t complete this analysis. Please try again with another source.'); return
     if not (cached and cached.get('key')==analysis_key):
         st.session_state['_analysis_cache']={'key':analysis_key,'frame':frame,'image':image,'elapsed':elapsed}
     if not selection_is_valid(frame.analysis_results,st.session_state.get('selected_person')): st.session_state.selected_person=display_id(frame.analysis_results[0]) if frame.analysis_results else None
