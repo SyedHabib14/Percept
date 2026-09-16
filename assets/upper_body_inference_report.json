@@ -1,0 +1,95 @@
+{
+  "report_type": "Percept detailed inference report",
+  "source_image": "D:/PDCv5/examples/images/upper_2.jpg",
+  "runtime": {
+    "hardware": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+    "provider": "CPUExecutionProvider",
+    "schema_version": "1.1.0"
+  },
+  "image_metadata": {
+    "width": 800,
+    "height": 534,
+    "aspect_ratio": 1.4981273408,
+    "megapixels": 0.4272,
+    "blur_score": 88.3471277774,
+    "brightness_mean": 116.668298221,
+    "is_low_resolution": false,
+    "usable": false
+  },
+  "summary": {
+    "person_count": 1,
+    "face_count": 1,
+    "visibility_class": "UB",
+    "body_visibility": "upper_only",
+    "camera_orientation": "facing_camera",
+    "ambiguous": false,
+    "estimated_age_years": 29.965477,
+    "gender_probability": 0.997115
+  },
+  "people": [
+    {
+      "person_id": "person_001",
+      "person_index": 0,
+      "person_detection": {
+        "box_xyxy": [307, 0, 772, 534],
+        "confidence": 0.853516,
+        "class_name": "person"
+      },
+      "face_detection": {
+        "box_xyxy": [490, 50, 611, 201],
+        "confidence": 0.871094,
+        "class_name": "face",
+        "available": true
+      },
+      "analysis": {
+        "estimated_age": 29.965477,
+        "smoothed_age": 29.965477,
+        "gender_probability": 0.997115,
+        "category_index": 0
+      },
+      "visibility": {
+        "label": "upper_only",
+        "code": "UB",
+        "scores": {
+          "face": 0.853,
+          "upper": 0.845,
+          "lower": 0.56,
+          "aspect_full": 0.0
+        },
+        "evidence": {
+          "face": {"visible": 5, "total": 5, "boundary_penalty": 0.0},
+          "upper": {"visible": 6, "total": 8, "boundary_penalty": 0.0},
+          "lower": {"visible": 4, "total": 4, "boundary_penalty": 0.0}
+        }
+      },
+      "pose": {
+        "box_xyxy": [307, 0, 772, 534],
+        "confidence": 0.853516,
+        "keypoints": {
+          "nose": [555.0, 127.34375, 1.0],
+          "left_eye": [580.0, 104.0625, 0.999512],
+          "right_eye": [530.0, 102.65625, 0.999512],
+          "left_shoulder": [665.0, 268.4375, 1.0],
+          "right_shoulder": [427.8125, 262.1875, 1.0],
+          "left_elbow": [718.75, 440.0, 0.996582],
+          "right_elbow": [358.125, 416.25, 0.99707],
+          "left_wrist": [705.0, 504.375, 0.973633],
+          "right_wrist": [377.8125, 417.8125, 0.973633],
+          "left_hip": [620.0, 575.0, 0.978516],
+          "right_hip": [463.4375, 573.125, 0.979492],
+          "left_knee": [639.375, 520.0, 0.878418],
+          "right_knee": [439.6875, 517.5, 0.876953],
+          "left_ankle": [616.25, 486.25, 0.99707],
+          "right_ankle": [467.5, 481.875, 0.99707]
+        }
+      }
+    }
+  ],
+  "timing_ms": {
+    "load": 19.04,
+    "detect": 35.38,
+    "analyze": 438.36,
+    "render": 2.54,
+    "total": 495.32
+  }
+}
